@@ -17,6 +17,8 @@ from model import Model
 from test import validation
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+from torch.utils.tensorboard import SummaryWriter
+
 def count_parameters(model):
     print("Modules, Parameters")
     total_params = 0
@@ -30,6 +32,9 @@ def count_parameters(model):
     return total_params
 
 def train(opt, show_number = 2, amp=False):
+
+    writer = SummaryWriter()
+
     """ dataset preparation """
     if not opt.data_filtering_off:
         print('Filtering the images containing characters which are not in opt.character')
@@ -234,9 +239,13 @@ def train(opt, show_number = 2, amp=False):
                 model.train()
 
                 # training loss and validation loss
+                writer.add_scalar("train/loss", loss_avg.val(), opt.num_iter)
+                writer.add_scalar("valid/loss", valid_loss, opt.num_iter)
                 loss_log = f'[{i}/{opt.num_iter}] Train loss: {loss_avg.val():0.5f}, Valid loss: {valid_loss:0.5f}, Elapsed_time: {elapsed_time:0.5f}'
                 loss_avg.reset()
 
+                writer.add_scalar("valid/accuracy", current_accuracy, opt.num_iter)
+                writer.add_scalar("valid/norm_ED", current_norm_ED, opt.num_iter)
                 current_model_log = f'{"Current_accuracy":17s}: {current_accuracy:0.3f}, {"Current_norm_ED":17s}: {current_norm_ED:0.4f}'
 
                 # keep best accuracy model (on valid dataset)
